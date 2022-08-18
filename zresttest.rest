@@ -1,0 +1,74 @@
+GET http://localhost:3003/api/blogs
+
+###
+POST http://localhost:3003/api/blogs
+content-type: application/json
+
+{
+    "title": "test1",
+    "author": "test1",
+    "url": "test1",
+    "likes": 10
+}
+
+###
+PUT http://localhost:3003/api/blogs/5a422aa71b54a676234d17f8
+content-type: application/json
+
+{
+"title": "Go To Statement Considered Harmful",
+"author": "Edsger W. Dijkstra",
+"url": "http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html",
+"likes": 120,
+"id": "5a422aa71b54a676234d17f8"
+}
+
+###
+DELETE http://localhost:3003/api/blogs/5a422a851b54a676234d17f7
+
+
+
+
+
+
+
+//for test populating and deleting all below
+
+
+###
+DELETE http://localhost:3003/api/blogs/devdelete
+
+###
+POST http://localhost:3003/api/blogs
+content-type: application/json
+
+{
+    "title": "test1",
+    "author": "test1",
+    "url": "test1",
+    "likes": 10
+}
+
+
+###
+POST http://localhost:3003/api/blogs
+content-type: application/json
+
+{
+    "title": "test2",
+    "author": "test2",
+    "url": "test2",
+    "likes": 10
+}
+
+
+###
+POST http://localhost:3003/api/blogs
+content-type: application/json
+
+{
+    "title": "test3",
+    "author": "test3",
+    "url": "test3",
+    "likes": 10
+}
