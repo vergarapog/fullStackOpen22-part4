@@ -17,13 +17,6 @@ blogsRouter.delete("/devdelete", async (request, response) => {
   response.status(204)
 })
 
-const getTokenFrom = (request) => {
-  const auth = request.get("authorization")
-  if (auth && auth.toLowerCase().startsWith("bearer ")) {
-    return auth.substring(7)
-  }
-}
-
 blogsRouter.post("/", async (request, response, next) => {
   let incomingBlog = request.body
 
@@ -35,15 +28,14 @@ blogsRouter.post("/", async (request, response, next) => {
     return response.status(400).end()
   }
 
-  const token = getTokenFrom(request)
   let decodedToken
   try {
-    decodedToken = jwt.verify(token, process.env.SECRET)
+    decodedToken = jwt.verify(request.token, process.env.SECRET)
   } catch (err) {
     return next(err)
   }
 
-  if (!token || !decodedToken.id) {
+  if (!request.token || !decodedToken.id) {
     return response.status(401).json({ error: "token missing or invalid" })
   }
 

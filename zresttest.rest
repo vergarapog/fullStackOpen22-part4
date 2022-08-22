@@ -6,9 +6,9 @@ content-type: application/json
 authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXIxIiwiaWQiOiI2MzAxZGI3MTQwNjJiMGQzMzFhZDY2NGQiLCJpYXQiOjE2NjEwOTQwNDZ9.QR7p5Ybqb2A3l9p1z6g27QPiY1u07VCqXkYdC31DLM4
 
 {
-    "title": "test2",
-    "author": "test2",
-    "url": "test2",
+    "title": "test3",
+    "author": "test3",
+    "url": "test3",
     "likes": 10
 }
 
