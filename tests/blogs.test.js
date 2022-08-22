@@ -4,6 +4,7 @@ const favoriteBlog = require("../utils/list_helper.js").favoriteBlog
 const mongoose = require("mongoose")
 const supertest = require("supertest")
 const Blog = require("../models/Blog")
+const User = require("../models/user")
 const app = require("../app")
 
 const api = supertest(app)
@@ -81,122 +82,184 @@ beforeEach(async () => {
   })
   await Promise.all(arrayPromises)
 }, 15000)
+describe("blog tests", () => {
+  describe("- general api blog endpoint tests", () => {
+    test("fetching all blogs", async () => {
+      const returnedBlogs = await api.get("/api/blogs")
+      // console.log(returnedBlogs.body)
+      expect(returnedBlogs.body.length).toBe(blogs.length)
+    })
+    test("a blog object's unique identifier is defined in property id", async () => {
+      const returnedBlogs = await api.get("/api/blogs")
 
-describe("total likes", () => {
-  test("of empty list is zero", () => {
-    expect(totalLikes([])).toBe(0)
+      expect(returnedBlogs.body[0].id).toBeDefined()
+    })
   })
-  test("when list has only one blog equals the likes of that", () => {
-    expect(totalLikes(listWithOneBlog)).toBe(5)
-  })
-  test("of a bigger list is calculated right", () => {
-    expect(totalLikes(blogs)).toBe(36)
-  })
-})
 
-describe("favorite blog", () => {
-  test("returns the highest liked among an array", () => {
-    expect(favoriteBlog(blogs)).toEqual({
-      _id: "5a422b3a1b54a676234d17f9",
-      title: "Canonical string reduction",
-      author: "Edsger W. Dijkstra",
-      url: "http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html",
-      likes: 12,
-      __v: 0,
+  describe("- adding a blog", () => {
+    test("a blog can be added", async () => {
+      const blogsAtStart = blogs
+
+      const toBeAddedBlog = {
+        title: "Days of Frankfurt",
+        author: "Frank Doghot",
+        url: "hotdog.com",
+        likes: 50,
+      }
+
+      const res = await api
+        .post("/api/blogs")
+        .send(toBeAddedBlog)
+        .expect(201)
+        .expect("Content-Type", /application\/json/)
+
+      const blogsAtEnd = await api.get("/api/blogs")
+
+      expect(blogsAtEnd.body).toHaveLength(blogs.length + 1)
+
+      // const allContents = blogsAtEnd.body.reduce((accu, curr) => {
+      //   return [...accu, curr.title]
+      // }, [])
+
+      const allContents = blogsAtEnd.body.map((b) => {
+        return b.title
+      })
+
+      expect(allContents).toContain("Days of Frankfurt")
+    })
+    test("if a like property is missing from post request, it should be added and default to 0", async () => {
+      const toBeAddedBlog = {
+        title: "Frankfurt 2",
+        author: "Frank Dog",
+        url: "dsdsdas",
+      }
+
+      const result = await api
+        .post("/api/blogs")
+        .send(toBeAddedBlog)
+        .expect(201)
+        .expect("Content-Type", /application\/json/)
+
+      expect(result.body.likes).toBeDefined()
+      expect(result.body.likes).toBe(0)
+    })
+    test("if title and url is missing from request, should receive code 400 - bad request", async () => {
+      const toBeAddedBlog = {
+        author: "Frank Dog",
+      }
+
+      await await api.post("/api/blogs").send(toBeAddedBlog).expect(400)
+    })
+  })
+
+  describe("- updating of a blog", () => {
+    test("a like property of a blog can be updated", async () => {
+      const allBlogsAtStart = await api.get("/api/blogs")
+      const firstBlog = allBlogsAtStart.body[0]
+
+      const updatedBlog = {
+        ...firstBlog,
+        likes: firstBlog.likes * 2,
+      }
+
+      await api.put(`/api/blogs/${firstBlog.id}`).send(updatedBlog).expect(200)
+
+      const allBlogsAtEnd = await api.get("/api/blogs")
+      const firstBlogAtEnd = allBlogsAtEnd.body[0]
+
+      expect(firstBlogAtEnd.likes).toBe(firstBlog.likes * 2)
+    })
+  })
+
+  describe("- deletion of a blog", () => {
+    test("a blog can be deleted", async () => {
+      const allBlogsAtStart = await api.get("/api/blogs")
+
+      const firstBlog = allBlogsAtStart.body[0]
+
+      await api.delete(`/api/blogs/${firstBlog.id}`).expect(204)
+
+      const allBlogsAtEnd = await api.get("/api/blogs")
+
+      expect(allBlogsAtEnd.body).toHaveLength(allBlogsAtStart.body.length - 1)
+    })
+  })
+
+  describe("- blog list helper functions tests", () => {
+    describe(" test for total likes counter helper function", () => {
+      test("of empty list is zero", () => {
+        expect(totalLikes([])).toBe(0)
+      })
+      test("when list has only one blog equals the likes of that", () => {
+        expect(totalLikes(listWithOneBlog)).toBe(5)
+      })
+      test("of a bigger list is calculated right", () => {
+        expect(totalLikes(blogs)).toBe(36)
+      })
+    })
+
+    describe(" test for favorite blog function helper", () => {
+      test("returns the highest liked among an array", () => {
+        expect(favoriteBlog(blogs)).toEqual({
+          _id: "5a422b3a1b54a676234d17f9",
+          title: "Canonical string reduction",
+          author: "Edsger W. Dijkstra",
+          url: "http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html",
+          likes: 12,
+          __v: 0,
+        })
+      })
     })
   })
 })
 
-describe("api endpoint tests", () => {
-  test("fetching all blogs", async () => {
-    const returnedBlogs = await api.get("/api/blogs")
-    // console.log(returnedBlogs.body)
-    expect(returnedBlogs.body.length).toBe(blogs.length)
-  })
-  test("a blog object's unique identifier is defined in property id", async () => {
-    const returnedBlogs = await api.get("/api/blogs")
+describe("- user tests", () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
 
-    expect(returnedBlogs.body[0].id).toBeDefined()
-  })
-  test("a blog can be added", async () => {
-    const blogsAtStart = blogs
-
-    const toBeAddedBlog = {
-      title: "Days of Frankfurt",
-      author: "Frank Doghot",
-      url: "hotdog.com",
-      likes: 50,
-    }
-
-    const res = await api
-      .post("/api/blogs")
-      .send(toBeAddedBlog)
-      .expect(201)
-      .expect("Content-Type", /application\/json/)
-
-    const blogsAtEnd = await api.get("/api/blogs")
-
-    expect(blogsAtEnd.body).toHaveLength(blogs.length + 1)
-
-    // const allContents = blogsAtEnd.body.reduce((accu, curr) => {
-    //   return [...accu, curr.title]
-    // }, [])
-
-    const allContents = blogsAtEnd.body.map((b) => {
-      return b.title
+    const validUser = new User({
+      username: "root",
+      name: "root",
+      password: "root",
     })
 
-    expect(allContents).toContain("Days of Frankfurt")
+    await validUser.save()
   })
-  test("if a like property is missing from post request, it should be added and default to 0", async () => {
-    const toBeAddedBlog = {
-      title: "Frankfurt 2",
-      author: "Frank Dog",
-      url: "dsdsdas",
-    }
+  describe("creation of a user", () => {
+    test("fails with status code 400 if username or password is not provided", async () => {
+      const newUser = {
+        name: "Brian",
+      }
 
-    const result = await api
-      .post("/api/blogs")
-      .send(toBeAddedBlog)
-      .expect(201)
-      .expect("Content-Type", /application\/json/)
+      await api.post("/api/users").send(newUser).expect(400)
+    })
+    test("fails with status code 400 if password length is less than 3", async () => {
+      const newUser = {
+        username: "Brian",
+        name: "Brian",
+        password: "br",
+      }
 
-    expect(result.body.likes).toBeDefined()
-    expect(result.body.likes).toBe(0)
-  })
-  test("if title and url is missing from request, should receive code 400 - bad request", async () => {
-    const toBeAddedBlog = {
-      author: "Frank Dog",
-    }
+      await api.post("/api/users").send(newUser).expect(400)
+    })
+    test("fails with status code 400 if username length is less than 3", async () => {
+      const newUser = {
+        username: "br",
+        name: "Brian",
+        password: "brian",
+      }
 
-    await await api.post("/api/blogs").send(toBeAddedBlog).expect(400)
-  })
-  test("a blog can be deleted", async () => {
-    const allBlogsAtStart = await api.get("/api/blogs")
+      await api.post("/api/users").send(newUser).expect(400)
+    })
+    test("fails with status code 400 if username is not unique", async () => {
+      const validUserDuplicate = {
+        username: "root",
+        name: "root",
+        password: "root",
+      }
 
-    const firstBlog = allBlogsAtStart.body[0]
-
-    await api.delete(`/api/blogs/${firstBlog.id}`).expect(204)
-
-    const allBlogsAtEnd = await api.get("/api/blogs")
-
-    expect(allBlogsAtEnd.body).toHaveLength(allBlogsAtStart.body.length - 1)
-  })
-  test("a like property of a blog can be updated", async () => {
-    const allBlogsAtStart = await api.get("/api/blogs")
-    const firstBlog = allBlogsAtStart.body[0]
-
-    const updatedBlog = {
-      ...firstBlog,
-      likes: firstBlog.likes * 2,
-    }
-
-    await api.put(`/api/blogs/${firstBlog.id}`).send(updatedBlog).expect(200)
-
-    const allBlogsAtEnd = await api.get("/api/blogs")
-    const firstBlogAtEnd = allBlogsAtEnd.body[0]
-
-    expect(firstBlogAtEnd.likes).toBe(firstBlog.likes * 2)
+      await await api.post("/api/users").send(validUserDuplicate).expect(400)
+    })
   })
 })
 
