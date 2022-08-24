@@ -1,14 +1,17 @@
 GET http://localhost:3003/api/blogs
 
 ###
+GET http://localhost:3003/api/blogs/6304930480de1508b01c6815
+
+###
 POST http://localhost:3003/api/blogs
 content-type: application/json
 authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXIxIiwiaWQiOiI2MzAxZGI3MTQwNjJiMGQzMzFhZDY2NGQiLCJpYXQiOjE2NjEwOTQwNDZ9.QR7p5Ybqb2A3l9p1z6g27QPiY1u07VCqXkYdC31DLM4
 
 {
-    "title": "test3",
-    "author": "test3",
-    "url": "test3",
+    "title": "55",
+    "author": "55",
+    "url": "55",
     "likes": 10
 }
 
@@ -25,7 +28,8 @@ content-type: application/json
 }
 
 ###
-DELETE http://localhost:3003/api/blogs/63005cdcbc512a626863283f
+DELETE http://localhost:3003/api/blogs/6304a6763b2122c13395eed8
+authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXIyIiwiaWQiOiI2MzA0YTYzNDNiMjEyMmMxMzM5NWVlZDEiLCJpYXQiOjE2NjEyNDkxMDF9.tYFQstwgTObNNYiT83e4SyFhpatvYGaPC2XEhw52IHI
 
 
 //for test populating and deleting all below
@@ -77,9 +81,9 @@ POST http://localhost:3003/api/users
 content-type: application/json
 
 {
-    "username": "user1",
-    "name": "user1",
-    "password": "user1"
+    "username": "user2",
+    "name": "user2",
+    "password": "user2"
 }
 
 ###
@@ -88,6 +92,6 @@ POST http://localhost:3003/api/login
 content-type: application/json
 
 {
-  "username": "user1",
-  "password": "user1"
+  "username": "user2",
+  "password": "user2"
 }

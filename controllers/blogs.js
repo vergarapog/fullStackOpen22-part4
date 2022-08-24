@@ -12,6 +12,19 @@ blogsRouter.get("/", async (request, response) => {
   response.json(blogs)
 })
 
+blogsRouter.get("/:id", async (request, response, next) => {
+  try {
+    const blog = await Blog.findById(request.params.id)
+    if (blog) {
+      return response.json(blog)
+    } else {
+      return response.status(404).json({ error: "blog not found" })
+    }
+  } catch (err) {
+    next(err)
+  }
+})
+
 blogsRouter.delete("/devdelete", async (request, response) => {
   await Blog.deleteMany({})
   response.status(204)
@@ -70,11 +83,26 @@ blogsRouter.post("/", async (request, response, next) => {
 })
 
 blogsRouter.delete("/:id", async (request, response, next) => {
+  let decodedToken = null
   try {
-    await Blog.findByIdAndRemove(request.params.id)
-    response.status(204).end()
+    decodedToken = jwt.verify(request.token, process.env.SECRET)
   } catch (err) {
-    next(err)
+    return next(err)
+  }
+
+  const blogToBeDeleted = await Blog.findById(request.params.id)
+  console.log(blogToBeDeleted)
+  const doesUserOwnBlog =
+    blogToBeDeleted.user.toString() === decodedToken.id ? true : false
+  if (doesUserOwnBlog) {
+    try {
+      await Blog.findByIdAndRemove(request.params.id)
+      return response.status(204).end()
+    } catch (err) {
+      return next(err)
+    }
+  } else {
+    return response.status(401).json({ error: "wrong user" })
   }
 })
 
