@@ -27,7 +27,7 @@ blogsRouter.get("/:id", async (request, response, next) => {
 
 blogsRouter.delete("/devdelete", async (request, response) => {
   await Blog.deleteMany({})
-  response.status(204)
+  response.status(204).end()
 })
 
 blogsRouter.post("/", async (request, response, next) => {
@@ -52,7 +52,7 @@ blogsRouter.post("/", async (request, response, next) => {
     return response.status(401).json({ error: "token missing or invalid" })
   }
 
-  const user = await User.findById(decodedToken.id)
+  const user = request.user
   if (!user) {
     return response.status(404).json({ error: "user not found" }).end()
   }
@@ -90,19 +90,33 @@ blogsRouter.delete("/:id", async (request, response, next) => {
     return next(err)
   }
 
+  const user = request.user
+  if (!user) {
+    return response.status(404).json({ error: "user not found" })
+  }
+  console.log(user)
+
   const blogToBeDeleted = await Blog.findById(request.params.id)
-  console.log(blogToBeDeleted)
+
   const doesUserOwnBlog =
     blogToBeDeleted.user.toString() === decodedToken.id ? true : false
   if (doesUserOwnBlog) {
     try {
       await Blog.findByIdAndRemove(request.params.id)
+
+      user.blogs = user.blogs.filter((blog) => {
+        return blog.toString() !== request.params.id
+      })
+      await user.save()
+
       return response.status(204).end()
     } catch (err) {
       return next(err)
     }
   } else {
-    return response.status(401).json({ error: "wrong user" })
+    return response
+      .status(401)
+      .json({ error: "wrong user/blog not owned by user" })
   }
 })
 
