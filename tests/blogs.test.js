@@ -5,6 +5,7 @@ const mongoose = require("mongoose")
 const supertest = require("supertest")
 const Blog = require("../models/Blog")
 const User = require("../models/user")
+const bcrypt = require("bcrypt")
 const app = require("../app")
 
 const api = supertest(app)
@@ -98,7 +99,10 @@ describe("blog tests", () => {
 
   describe("- adding a blog", () => {
     test("a blog can be added", async () => {
-      const blogsAtStart = blogs
+      //login and get token first
+      const userLoginInfo = await api
+        .post("/api/login")
+        .send({ username: "root", password: "root" })
 
       const toBeAddedBlog = {
         title: "Days of Frankfurt",
@@ -110,6 +114,7 @@ describe("blog tests", () => {
       const res = await api
         .post("/api/blogs")
         .send(toBeAddedBlog)
+        .set("Authorization", `Bearer ${userLoginInfo.body.token}`)
         .expect(201)
         .expect("Content-Type", /application\/json/)
 
@@ -117,17 +122,32 @@ describe("blog tests", () => {
 
       expect(blogsAtEnd.body).toHaveLength(blogs.length + 1)
 
-      // const allContents = blogsAtEnd.body.reduce((accu, curr) => {
-      //   return [...accu, curr.title]
-      // }, [])
-
       const allContents = blogsAtEnd.body.map((b) => {
         return b.title
       })
 
       expect(allContents).toContain("Days of Frankfurt")
     })
+    test("adding a blog fails with status 401 if token is not provided", async () => {
+      const toBeAddedBlog = {
+        title: "Days of Frankfurt",
+        author: "Frank Doghot",
+        url: "hotdog.com",
+        likes: 50,
+      }
+
+      const res = await api.post("/api/blogs").send(toBeAddedBlog).expect(401)
+
+      const blogsAtEnd = await api.get("/api/blogs")
+
+      expect(blogsAtEnd.body).toHaveLength(blogs.length)
+    })
     test("if a like property is missing from post request, it should be added and default to 0", async () => {
+      //login and get token first
+      const userLoginInfo = await api
+        .post("/api/login")
+        .send({ username: "root", password: "root" })
+
       const toBeAddedBlog = {
         title: "Frankfurt 2",
         author: "Frank Dog",
@@ -137,6 +157,7 @@ describe("blog tests", () => {
       const result = await api
         .post("/api/blogs")
         .send(toBeAddedBlog)
+        .set("Authorization", `Bearer ${userLoginInfo.body.token}`)
         .expect(201)
         .expect("Content-Type", /application\/json/)
 
@@ -172,12 +193,34 @@ describe("blog tests", () => {
   })
 
   describe("- deletion of a blog", () => {
-    test("a blog can be deleted", async () => {
+    test("a blog can be deleted with a valid user and token", async () => {
+      //login and get token first
+      const userLoginInfo = await api
+        .post("/api/login")
+        .send({ username: "root", password: "root" })
+
+      //send a post request with the blog and its user to be deleted
+      const blogToBeDeleted = {
+        title: "blog1",
+        author: "blog1",
+        url: "blog1",
+        likes: 10,
+      }
+      await api
+        .post("/api/blogs")
+        .send(blogToBeDeleted)
+        .set("Authorization", `Bearer ${userLoginInfo.body.token}`)
+
       const allBlogsAtStart = await api.get("/api/blogs")
 
-      const firstBlog = allBlogsAtStart.body[0]
+      //find the sent blog to be deleted in the database
+      const blogInDb = await Blog.findOne({ title: "blog1" })
 
-      await api.delete(`/api/blogs/${firstBlog.id}`).expect(204)
+      //delete the blog and supply a valid token
+      await api
+        .delete(`/api/blogs/${blogInDb.id}`)
+        .set("Authorization", `Bearer ${userLoginInfo.body.token}`)
+        .expect(204)
 
       const allBlogsAtEnd = await api.get("/api/blogs")
 
@@ -190,10 +233,12 @@ describe("- user tests", () => {
   beforeEach(async () => {
     await User.deleteMany({})
 
+    const passwordHash = await bcrypt.hash("root", 10)
+
     const validUser = new User({
       username: "root",
       name: "root",
-      password: "root",
+      passwordHash: passwordHash,
     })
 
     await validUser.save()
@@ -232,6 +277,34 @@ describe("- user tests", () => {
       }
 
       await await api.post("/api/users").send(validUserDuplicate).expect(400)
+    })
+  })
+  describe("login tests", () => {
+    test("a valid user can login and receive a token when valid username and password is entered", async () => {
+      const validUserCredentials = {
+        username: "root",
+        password: "root",
+      }
+
+      const res = await api
+        .post("/api/login")
+        .send(validUserCredentials)
+        .expect(200)
+
+      expect(res.body.token).toBeDefined()
+    })
+    test("a user will receive an error if credentials provided are wrong", async () => {
+      const invalidUserCredentials = {
+        username: "root",
+        password: "rooot",
+      }
+
+      const res = await api
+        .post("/api/login")
+        .send(invalidUserCredentials)
+        .expect(401)
+
+      expect(res.body.error).toBe("invalid username or password")
     })
   })
 })
