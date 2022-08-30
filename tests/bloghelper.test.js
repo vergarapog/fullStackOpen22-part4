@@ -1,5 +1,7 @@
 const totalLikes = require("../utils/list_helper.js").totalLikes
 const favoriteBlog = require("../utils/list_helper.js").favoriteBlog
+const mostBlogs = require("../utils/list_helper.js").mostBlogs
+const mostLikes = require("../utils/list_helper.js").mostLikes
 
 const mongoose = require("mongoose")
 const supertest = require("supertest")
@@ -96,7 +98,7 @@ describe("- blog list helper functions tests", () => {
     })
   })
 
-  describe(" test for favorite blog function helper", () => {
+  describe("tests for  blog function helpers", () => {
     test("returns the highest liked among an array", () => {
       expect(favoriteBlog(blogs)).toEqual({
         _id: "5a422b3a1b54a676234d17f9",
@@ -105,6 +107,18 @@ describe("- blog list helper functions tests", () => {
         url: "http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html",
         likes: 12,
         __v: 0,
+      })
+    })
+    test("returns the author with the most blogs", () => {
+      expect(mostBlogs(blogs)).toEqual({
+        author: "Robert C. Martin",
+        blogs: 3,
+      })
+    })
+    test("returns the authors with the highest likes counted from all blogs", () => {
+      expect(mostLikes(blogs)).toEqual({
+        author: "Edsger W. Dijkstra",
+        likes: 17,
       })
     })
   })
